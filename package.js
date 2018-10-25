@@ -7,12 +7,13 @@ Package.describe({
 
 Package.registerBuildPlugin({
   name: "compileScssBatch",
-  use: ['caching-compiler@1.2.0', 'ecmascript@0.12.0'],
+  use: ['caching-compiler@1.2.0', 'ecmascript@0.12.0', 'tmeasday:check-npm-versions@0.3.2'],
   sources: [
     'plugin/compile-scss.js'
   ],
   npmDependencies: {
-    'node-sass': '4.9.3'
+    'node-sass': '4.9.3',
+    postcss: '6.0.14'
   }
 });
 
@@ -47,7 +48,7 @@ Package.onTest(function (api) {
     'test/include-paths/include-paths.scss',
     'test/include-paths/modules/module/_module.scss',
   ]);
-  
+
   api.addFiles('tests.js', 'client');
 
 });

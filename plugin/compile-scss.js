@@ -1,7 +1,15 @@
 import sass from 'node-sass';
+import postcss from 'postcss';
 import { promisify } from 'util';
+import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
 const path = Plugin.path;
 const fs = Plugin.fs;
+
+checkNpmVersions({
+  'postcss-load-config': '^1.2.0'
+}, 'fourseven:scss');
+
+const load = require('postcss-load-config');
 
 const compileSass = promisify(sass.render);
 let _includePaths;
@@ -10,6 +18,32 @@ Plugin.registerCompiler({
   extensions: ['scss', 'sass'],
   archMatching: 'web'
 }, () => new SassCompiler());
+
+let loaded;
+let postcssConfigPlugins = [];
+let postcssConfigParser = null;
+let postcssConfigExcludedPackages = [];
+const loadPostcssConfig = function () {
+  if (!loaded) {
+      loaded = true;
+
+      let config;
+      try {
+          config = Promise.await(load({ meteor: true }));
+          postcssConfigPlugins = config.plugins || [];
+          postcssConfigParser = config.options.parser || null;
+          // There is also "config.file" which is a path to the file we use to force
+          // Meteor reload on any change, but it seems this is not (yet) possible.
+      }
+      catch (error) {
+          console.log(error);
+          // Do not emit an error if the error is that no config can be found.
+          if (error.message.indexOf('No PostCSS Config found') < 0) {
+              throw error;
+          }
+      }
+  }
+};
 
 const toPosixPath = function toPosixPath(p, partialPath) {
   // Sometimes, you can have a path like \Users\IEUser on windows, and this
@@ -42,6 +76,7 @@ class SassCompiler extends MultiFileCachingCompiler {
       compilerName: 'sass',
       defaultCacheSize: 1024*1024*10,
     });
+    loadPostcssConfig();
   }
 
   getCacheKey(inputFile) {
@@ -221,7 +256,13 @@ class SassCompiler extends MultiFileCachingCompiler {
 
     let output;
     try {
-      output = await compileSass(options);
+      const data = await compileSass(options);
+      const processed = await postcss(postcssConfigPlugins).process(data.css, {
+        from: options.file,
+        parser: postcssConfigParser,
+        map: { inline: false }
+      });
+      output = processed;
     } catch (e) {
       inputFile.error({
         message: `Scss compiler error: ${e.formatted}\n`,
