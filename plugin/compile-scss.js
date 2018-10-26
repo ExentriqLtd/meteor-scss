@@ -260,7 +260,7 @@ class SassCompiler extends MultiFileCachingCompiler {
       const processed = await postcss(postcssConfigPlugins).process(data.css, {
         from: options.file,
         parser: postcssConfigParser,
-        map: { inline: false }
+        map: { inline: false, annotation: false }
       });
       output = processed;
     } catch (e) {
