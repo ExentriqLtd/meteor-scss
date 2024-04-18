@@ -12,7 +12,7 @@ Package.registerBuildPlugin({
     'plugin/compile-scss.js'
   ],
   npmDependencies: {
-    'node-sass': '4.9.3',
+    'node-sass': '4.14.1',
     postcss: '6.0.14'
   }
 });
